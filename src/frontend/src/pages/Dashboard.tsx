@@ -18,7 +18,6 @@ const EMPTY_FILTERS: Filters = {
   status: '',
   priority: '',
   insurer: '',
-
   startDate: '',
   endDate: '',
 }
