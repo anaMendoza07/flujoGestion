@@ -1,10 +1,13 @@
 import { Search, X } from 'lucide-react'
 
 export interface Filters {
-  search:   string
-  status:   string
+  search: string
+  status: string
   priority: string
-  insurer:  string
+  insurer: string
+
+  startDate: string
+  endDate: string
 }
 
 interface Props {
@@ -33,16 +36,26 @@ const PRIORITY_OPTIONS = [
   { value: 'lost',     label: 'Perdida' },
 ]
 
-export default function FilterBar({ filters, onChange, onClear, totalCount, filteredCount }: Props) {
-  const set = (key: keyof Filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    onChange({ ...filters, [key]: e.target.value })
+export default function FilterBar({
+  filters,
+  onChange,
+  onClear,
+  totalCount,
+  filteredCount
+}: Props) {
+
+  const set = (key: keyof Filters) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange({ ...filters, [key]: e.target.value })
 
   const hasFilters = Object.values(filters).some(Boolean)
 
   return (
     <div className="bg-white border border-stone-200 rounded-xl px-4 py-3 space-y-3">
+      
       <div className="flex flex-col sm:flex-row gap-2">
-        {/* Búsqueda */}
+        
+        {/* BÚSQUEDA */}
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
           <input
@@ -54,25 +67,56 @@ export default function FilterBar({ filters, onChange, onClear, totalCount, filt
           />
         </div>
 
-        {/* Estado */}
+        {/* VENCIMIENTO ENTRE */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-stone-500 whitespace-nowrap">
+            Vencimiento entre
+          </span>
+
+          <input
+            type="date"
+            value={filters.startDate}
+            onChange={set('startDate')}
+            className="text-sm border border-stone-200 rounded-lg px-3 py-2 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-300 text-stone-700"
+          />
+
+          <span className="text-xs text-stone-400">y</span>
+
+          <input
+            type="date"
+            value={filters.endDate}
+            onChange={set('endDate')}
+            className="text-sm border border-stone-200 rounded-lg px-3 py-2 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-300 text-stone-700"
+          />
+        </div>
+
+        {/* ESTADO */}
         <select
           value={filters.status}
           onChange={set('status')}
           className="text-sm border border-stone-200 rounded-lg px-3 py-2 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-300 text-stone-700"
         >
-          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {STATUS_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </select>
 
-        {/* Prioridad */}
+        {/* PRIORIDAD */}
         <select
           value={filters.priority}
           onChange={set('priority')}
           className="text-sm border border-stone-200 rounded-lg px-3 py-2 bg-stone-50 focus:outline-none focus:ring-2 focus:ring-stone-300 text-stone-700"
         >
-          {PRIORITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          {PRIORITY_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </select>
 
-        {/* Limpiar */}
+        {/* LIMPIAR */}
         {hasFilters && (
           <button
             onClick={onClear}
@@ -83,10 +127,14 @@ export default function FilterBar({ filters, onChange, onClear, totalCount, filt
         )}
       </div>
 
-      {/* Contador */}
+      {/* CONTADOR */}
       {hasFilters && (
         <p className="text-xs text-stone-400">
-          Mostrando <span className="font-medium text-stone-600">{filteredCount}</span> de {totalCount} pólizas
+          Mostrando{' '}
+          <span className="font-medium text-stone-600">
+            {filteredCount}
+          </span>{' '}
+          de {totalCount} pólizas
         </p>
       )}
     </div>

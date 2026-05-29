@@ -12,14 +12,20 @@ import PolicyDetail from '../components/PolicyDetail'
 import RenewModal from '../components/RenewModal'
 import ContactModal from '../components/ContactModal'
 
+
 const EMPTY_FILTERS: Filters = {
   search: '',
   status: '',
   priority: '',
   insurer: '',
+
+  startDate: '',
+  endDate: '',
 }
 
+
 export default function Dashboard() {
+
   const [policies, setPolicies] =
     useState<Policy[]>([])
 
@@ -31,6 +37,9 @@ export default function Dashboard() {
 
   const [filters, setFilters] =
     useState<Filters>(EMPTY_FILTERS)
+
+  const [activeMetric, setActiveMetric] =
+    useState('')
 
   const [selectedPolicy, setSelectedPolicy] =
     useState<Policy | null>(null)
@@ -51,11 +60,15 @@ export default function Dashboard() {
       setPolicies(
         sortByPriority(res.data)
       )
+
     } catch {
+
       setError(
         'No se pudo conectar con el servidor.'
       )
+
     } finally {
+
       setLoading(false)
     }
   }
@@ -65,11 +78,14 @@ export default function Dashboard() {
   }, [])
 
   const filteredPolicies = useMemo(() => {
+
     return policies.filter((p) => {
+
       const search =
         filters.search.toLowerCase()
 
       if (search) {
+
         const inName =
           p.client_name
             ?.toLowerCase()
@@ -102,14 +118,40 @@ export default function Dashboard() {
           filters.insurer.toLowerCase()
       )
         return false
+     
+      if (filters.startDate) {
+
+        const start =
+          new Date(filters.startDate)
+
+        const exp =
+          new Date(p.expiration_date)
+
+        if (exp < start)
+          return false
+      }
+
+      if (filters.endDate) {
+
+        const end =
+          new Date(filters.endDate)
+
+        const exp =
+          new Date(p.expiration_date)
+
+        if (exp > end)
+          return false
+      }
 
       return true
     })
+
   }, [policies, filters])
 
   const handleRenewSuccess = (
     updatedPolicy: Policy
   ) => {
+
     setPolicies((prev) =>
       sortByPriority(
         prev.map((p) =>
@@ -131,6 +173,7 @@ export default function Dashboard() {
   }
 
   const handleContactSuccess = () => {
+
     setContactPolicy(null)
 
     if (
@@ -148,6 +191,7 @@ export default function Dashboard() {
 
       {/* HEADER */}
       <header className="bg-white/90 backdrop-blur border-b border-stone-200 sticky top-0 z-30">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
 
           {/* izquierda */}
@@ -177,6 +221,7 @@ export default function Dashboard() {
 
             {/* textos */}
             <div>
+
               <h1 className="text-xl font-black text-stone-800 tracking-tight">
                 AgenteMotor
               </h1>
@@ -184,6 +229,7 @@ export default function Dashboard() {
               <p className="text-xs text-stone-500 mt-0.5">
                 María · Gestión de pólizas
               </p>
+
             </div>
           </div>
 
@@ -206,6 +252,7 @@ export default function Dashboard() {
             "
             title="Actualizar"
           >
+
             <RefreshCw
               className={`w-4 h-4 ${
                 loading
@@ -213,6 +260,7 @@ export default function Dashboard() {
                   : ''
               }`}
             />
+
           </button>
         </div>
       </header>
@@ -229,8 +277,54 @@ export default function Dashboard() {
 
         {/* STATS */}
         {!loading && (
+
           <StatsBar
             policies={policies}
+            activeMetric={activeMetric}
+            onSelectMetric={(metric) => {
+
+              if (activeMetric === metric) {
+
+                setActiveMetric('')
+
+                setFilters({
+                  ...filters,
+                  priority: '',
+                  status: '',
+                })
+
+                return
+              }
+
+              setActiveMetric(metric)
+
+              if (metric === 'critical') {
+
+                setFilters({
+                  ...filters,
+                  priority: 'critical',
+                  status: '',
+                })
+              }
+
+              if (metric === 'high') {
+
+                setFilters({
+                  ...filters,
+                  priority: 'high',
+                  status: '',
+                })
+              }
+
+              if (metric === 'renewable') {
+
+                setFilters({
+                  ...filters,
+                  priority: '',
+                  status: 'renewable',
+                })
+              }
+            }}
           />
         )}
 
@@ -238,34 +332,35 @@ export default function Dashboard() {
         <FilterBar
           filters={filters}
           onChange={setFilters}
-          onClear={() =>
+          onClear={() => {
+
             setFilters(EMPTY_FILTERS)
-          }
+            setActiveMetric('')
+          }}
           totalCount={policies.length}
-          filteredCount={
-            filteredPolicies.length
-          }
+          filteredCount={filteredPolicies.length}
         />
 
         {/* TABLA */}
         {loading ? (
+
           <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center shadow-sm">
+
             <RefreshCw className="w-5 h-5 animate-spin text-stone-300 mx-auto mb-2" />
 
             <p className="text-sm text-stone-400">
               Cargando pólizas…
             </p>
+
           </div>
+
         ) : (
+
           <PolicyTable
             policies={filteredPolicies}
-            onSelectPolicy={
-              setSelectedPolicy
-            }
+            onSelectPolicy={setSelectedPolicy}
             onRenew={setRenewPolicy}
-            onContact={
-              setContactPolicy
-            }
+            onContact={setContactPolicy}
           />
         )}
       </main>
@@ -278,9 +373,7 @@ export default function Dashboard() {
             setSelectedPolicy(null)
           }
           onRenew={setRenewPolicy}
-          onContact={
-            setContactPolicy
-          }
+          onContact={setContactPolicy}
           onRefresh={fetchPolicies}
         />
       )}
@@ -292,9 +385,7 @@ export default function Dashboard() {
           onClose={() =>
             setRenewPolicy(null)
           }
-          onSuccess={
-            handleRenewSuccess
-          }
+          onSuccess={handleRenewSuccess}
         />
       )}
 
@@ -305,9 +396,7 @@ export default function Dashboard() {
           onClose={() =>
             setContactPolicy(null)
           }
-          onSuccess={
-            handleContactSuccess
-          }
+          onSuccess={handleContactSuccess}
         />
       )}
     </div>

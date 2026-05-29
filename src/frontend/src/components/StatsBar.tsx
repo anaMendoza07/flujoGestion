@@ -3,6 +3,12 @@ import type { Policy } from '../utils/priority'
 
 interface Props {
   policies: Policy[]
+
+  activeMetric: string
+
+  onSelectMetric: (
+    metric: string
+  ) => void
 }
 
 function CircleCard({
@@ -11,15 +17,36 @@ function CircleCard({
   subtitle,
   gradient,
   shadow,
+  active,
+  onClick,
 }: {
   value: number
   label: string
   subtitle: string
   gradient: string
   shadow: string
+  active: boolean
+  onClick: () => void
 }) {
   return (
-    <div className="group flex items-center gap-4 min-w-[240px]">
+    <button
+      onClick={onClick}
+      className={`
+        group
+        flex
+        items-center
+        gap-4
+        min-w-[240px]
+        transition-all
+        duration-300
+        text-left
+        ${
+          active
+            ? 'scale-105'
+            : 'opacity-90 hover:opacity-100'
+        }
+      `}
+    >
 
       {/* círculo */}
       <div
@@ -35,6 +62,11 @@ function CircleCard({
           duration-300
           group-hover:scale-105
           flex-shrink-0
+          ${
+            active
+              ? 'ring-4 ring-stone-200'
+              : ''
+          }
         `}
       >
         {/* interior */}
@@ -55,6 +87,7 @@ function CircleCard({
 
       {/* textos */}
       <div>
+
         <p className="text-sm font-bold text-stone-800">
           {label}
         </p>
@@ -62,13 +95,16 @@ function CircleCard({
         <p className="text-xs text-stone-500 mt-1 leading-relaxed">
           {subtitle}
         </p>
+
       </div>
-    </div>
+    </button>
   )
 }
 
 export default function StatsBar({
   policies,
+  activeMetric,
+  onSelectMetric,
 }: Props) {
 
   const critical = policies.filter(
@@ -86,62 +122,50 @@ export default function StatsBar({
   return (
     <div className="bg-white border border-stone-200 rounded-3xl px-8 py-6 shadow-sm">
 
-      <div className="flex flex-wrap items-center justify-between gap-8">
+      {/* métricas */}
+      <div className="flex flex-wrap items-center gap-12">
 
-        {/* métricas horizontales */}
-        <div className="flex flex-wrap items-center gap-10">
+        <CircleCard
+          value={critical}
+          label="Críticas"
+          subtitle="En ventana de 30 días"
+          gradient="bg-gradient-to-br from-red-500 to-red-700"
+          shadow="shadow-[0_6px_18px_rgba(220,38,38,0.25)]"
+          active={
+            activeMetric === 'critical'
+          }
+          onClick={() =>
+            onSelectMetric('critical')
+          }
+        />
 
-          <CircleCard
-            value={critical}
-            label="Críticas"
-            subtitle="En ventana de 30 días"
-            gradient="bg-gradient-to-br from-red-500 to-red-700"
-            shadow="shadow-[0_6px_18px_rgba(220,38,38,0.25)]"
-          />
+        <CircleCard
+          value={high}
+          label="Urgentes"
+          subtitle="Vencen esta semana"
+          gradient="bg-gradient-to-br from-orange-400 to-orange-600"
+          shadow="shadow-[0_6px_18px_rgba(249,115,22,0.25)]"
+          active={
+            activeMetric === 'high'
+          }
+          onClick={() =>
+            onSelectMetric('high')
+          }
+        />
 
-          <CircleCard
-            value={high}
-            label="Urgentes"
-            subtitle="Vencen esta semana"
-            gradient="bg-gradient-to-br from-orange-400 to-orange-600"
-            shadow="shadow-[0_6px_18px_rgba(249,115,22,0.25)]"
-          />
-
-          <CircleCard
-            value={renewable}
-            label="Renovables"
-            subtitle="Vencen en 15 días"
-            gradient="bg-gradient-to-br from-amber-400 to-yellow-500"
-            shadow="shadow-[0_6px_18px_rgba(234,179,8,0.25)]"
-          />
-        </div>
-
-        {/* card primas */}
-        <div
-          className="
-            min-w-[250px]
-            bg-gradient-to-br
-            from-emerald-500
-            to-emerald-700
-            text-white
-            rounded-3xl
-            px-7
-            py-6
-            shadow-[0_8px_25px_rgba(16,185,129,0.25)]
-          "
-        >
-          <p className="text-xs uppercase tracking-wide opacity-80">
-            Primas renovadas
-          </p>
-
-          <h2 className="text-4xl font-black mt-2 leading-none">
-            $12.8M
-          </h2>
-
-          <p className="text-xs opacity-80 mt-3">
-            renovadas este mes
-          </p>
-        </div>
+        <CircleCard
+          value={renewable}
+          label="Renovables"
+          subtitle="Vencen en 15 días"
+          gradient="bg-gradient-to-br from-amber-400 to-yellow-500"
+          shadow="shadow-[0_6px_18px_rgba(234,179,8,0.25)]"
+          active={
+            activeMetric === 'renewable'
+          }
+          onClick={() =>
+            onSelectMetric('renewable')
+          }
+        />
       </div>
     </div>
   )
