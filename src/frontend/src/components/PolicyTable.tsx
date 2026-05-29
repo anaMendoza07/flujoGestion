@@ -1,4 +1,13 @@
-import { Phone, RefreshCw, ChevronRight } from 'lucide-react'
+
+import {
+  RefreshCw,
+  ChevronRight,
+  FileText,
+  MessageCircle
+} from 'lucide-react'
+
+
+
 import type { Policy } from '../utils/priority'
 import { PriorityBadge, StatusBadge } from './Badges'
 
@@ -95,9 +104,25 @@ export default function PolicyTable({ policies, onSelectPolicy, onRenew, onConta
                       )}
                       <button
                         onClick={() => onContact(p)}
-                        className="flex items-center gap-1 text-xs bg-stone-100 text-stone-600 hover:bg-stone-200 px-2 py-1 rounded-md transition-colors"
+                        className="
+                          flex
+                          items-center
+                          gap-2
+                          text-xs
+                          font-medium
+                          bg-blue-100
+                          text-blue-700
+                          hover:bg-blue-200
+                          hover:scale-105
+                          px-3
+                          py-2
+                          rounded-xl
+                          transition-all
+                          duration-200
+                        "
                       >
-                        <Phone className="w-3 h-3" /> Contactar
+                        <FileText className="w-3 h-3" />
+                        Registrar actividad
                       </button>
                       <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-stone-500 transition-colors" />
                     </div>

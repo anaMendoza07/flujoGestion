@@ -124,7 +124,7 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
               onClick={() => onContact(policy)}
               className="flex items-center gap-1.5 text-sm bg-stone-100 text-stone-700 hover:bg-stone-200 px-3 py-2 rounded-lg transition-colors flex-1 justify-center"
             >
-              <Phone className="w-4 h-4" /> Registrar contacto
+              <Phone className="w-4 h-4" /> Registrar Actividad
             </button>
           </div>
 
