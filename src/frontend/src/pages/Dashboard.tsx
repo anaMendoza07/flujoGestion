@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { RefreshCw } from 'lucide-react'
-import { getPolicies } from '../services/api'
-import { sortByPriority, type Policy } from '../utils/priority'
+import { getPolicies } from '../services/api.js'
+import { sortByPriority, type Policy } from '../utils/priority.js'
 import StatsBar from '../components/StatsBar'
 import FilterBar, { type Filters } from '../components/FilterBar'
-import PolicyTable from '../components/PolicyTable.tsx'
+import PolicyTable from '../components/PolicyTable'
 import PolicyDetail from '../components/PolicyDetail'
 import RenewModal from '../components/RenewModal'
 import ContactModal from '../components/ContactModal'
@@ -12,13 +12,13 @@ import ContactModal from '../components/ContactModal'
 const EMPTY_FILTERS: Filters = { search: '', status: '', priority: '', insurer: '' }
 
 export default function Dashboard() {
-  const [policies, setPolicies]               = useState<Policy[]>([])
-  const [loading, setLoading]                 = useState(true)
-  const [error, setError]                     = useState('')
-  const [filters, setFilters]                 = useState<Filters>(EMPTY_FILTERS)
-  const [selectedPolicy, setSelectedPolicy]   = useState<Policy | null>(null)
-  const [renewPolicy, setRenewPolicy]         = useState<Policy | null>(null)
-  const [contactPolicy, setContactPolicy]     = useState<Policy | null>(null)
+  const [policies, setPolicies]             = useState<Policy[]>([])
+  const [loading, setLoading]               = useState(true)
+  const [error, setError]                   = useState('')
+  const [filters, setFilters]               = useState<Filters>(EMPTY_FILTERS)
+  const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
+  const [renewPolicy, setRenewPolicy]       = useState<Policy | null>(null)
+  const [contactPolicy, setContactPolicy]   = useState<Policy | null>(null)
 
   const fetchPolicies = async () => {
     setLoading(true)
