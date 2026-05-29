@@ -11,17 +11,38 @@ def get_connection():
     return conn
 
 
+def _migrate(conn):
+    """Migraciones incrementales. Seguras de re-ejecutar."""
+    cursor = conn.cursor()
+
+    # Agrega document_number si no existe
+    try:
+        cursor.execute("ALTER TABLE clients ADD COLUMN document_number TEXT")
+    except Exception:
+        pass  # La columna ya existe
+
+    # Agrega notes si no existe
+    try:
+        cursor.execute("ALTER TABLE clients ADD COLUMN notes TEXT")
+    except Exception:
+        pass  # La columna ya existe
+
+    conn.commit()
+
+
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS clients (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name   TEXT NOT NULL,
-            phone       TEXT,
-            email       TEXT,
-            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name       TEXT NOT NULL,
+            phone           TEXT,
+            email           TEXT,
+            document_number TEXT,
+            notes           TEXT,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now'))
         );
 
         CREATE TABLE IF NOT EXISTS policies (
@@ -46,4 +67,5 @@ def init_db():
     """)
 
     conn.commit()
+    _migrate(conn)
     conn.close()
