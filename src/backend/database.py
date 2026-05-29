@@ -5,35 +5,29 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "agentemotor.db")
 
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL")   # ← evita lock entre readers y writers
     return conn
 
 
 def _migrate(conn):
-    """Migraciones incrementales. Seguras de re-ejecutar."""
     cursor = conn.cursor()
-
-    # Agrega document_number si no existe
     try:
         cursor.execute("ALTER TABLE clients ADD COLUMN document_number TEXT")
     except Exception:
-        pass  # La columna ya existe
-
-    # Agrega notes si no existe
+        pass
     try:
         cursor.execute("ALTER TABLE clients ADD COLUMN notes TEXT")
     except Exception:
-        pass  # La columna ya existe
-
+        pass
     conn.commit()
 
 
 def init_db():
     conn = get_connection()
     cursor = conn.cursor()
-
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS clients (
             id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +59,6 @@ def init_db():
             created_at    TEXT NOT NULL DEFAULT (datetime('now'))
         );
     """)
-
     conn.commit()
     _migrate(conn)
     conn.close()
