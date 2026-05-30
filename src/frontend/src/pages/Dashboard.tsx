@@ -1,44 +1,36 @@
-
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { RefreshCw, Users, FileText } from 'lucide-react'
 
 import { getPolicies } from '../services/api.js'
 import { sortByPriority, type Policy } from '../utils/priority.js'
 
-import StatsBar    from '../components/StatsBar.tsx'
+import StatsBar     from '../components/StatsBar.tsx'
 import FilterBar, { type Filters } from '../components/FilterBar'
-import PolicyTable from '../components/PolicyTable'
+import PolicyTable  from '../components/PolicyTable'
 import PolicyDetail from '../components/PolicyDetail'
-import RenewModal  from '../components/RenewModal'
+import RenewModal   from '../components/RenewModal'
 import ContactModal from '../components/ContactModal'
-import ClientsModal from '../components/ClientsModal'
-import PoliciesModal from '../components/PoliciesModal.tsx'
-
+import ClientsModal  from '../components/ClientsModal'
+import PoliciesModal from '../components/PoliciesModal'
 
 const EMPTY_FILTERS: Filters = {
-  search:    '',
-  status:    '',
-  priority:  '',
-  insurer:   '',
-  startDate: '',
-  endDate:   '',
+  search: '', status: '', priority: '', insurer: '', startDate: '', endDate: '',
 }
 
-
 export default function Dashboard() {
-
-  const [policies, setPolicies]     = useState<Policy[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState('')
-  const [filters, setFilters]       = useState<Filters>(EMPTY_FILTERS)
+  const [policies, setPolicies]   = useState<Policy[]>([])
+  const [loading, setLoading]     = useState(true)
+  const [error, setError]         = useState('')
+  const [filters, setFilters]     = useState<Filters>(EMPTY_FILTERS)
   const [activeMetric, setActiveMetric] = useState('')
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
   const [renewPolicy, setRenewPolicy]       = useState<Policy | null>(null)
   const [contactPolicy, setContactPolicy]   = useState<Policy | null>(null)
+  const [showClients, setShowClients]       = useState(false)
+  const [showPolicies, setShowPolicies]     = useState(false)
 
-  // Modal CRUD
-  const [showClients, setShowClients]   = useState(false)
-  const [showPolicies, setShowPolicies] = useState(false)
+  // Callback que PolicyDetail entrega para refrescar su lista de actividades
+  const contactSavedCbRef = useRef<(() => void) | null>(null)
 
   const fetchPolicies = async () => {
     setLoading(true)
@@ -56,39 +48,29 @@ export default function Dashboard() {
   useEffect(() => { fetchPolicies() }, [])
 
   const filteredPolicies = useMemo(() => {
-    return policies.filter((p) => {
-      const search = filters.search.toLowerCase()
-      if (search) {
-        const inName    = p.client_name?.toLowerCase().includes(search)
-        const inInsurer = p.insurer?.toLowerCase().includes(search)
-        if (!inName && !inInsurer) return false
-      }
+    return policies.filter(p => {
+      const q = filters.search.toLowerCase()
+      if (q && !p.client_name?.toLowerCase().includes(q) && !p.insurer?.toLowerCase().includes(q)) return false
       if (filters.status   && p.status         !== filters.status)   return false
       if (filters.priority && p.priority_level !== filters.priority) return false
       if (filters.insurer  && p.insurer?.toLowerCase() !== filters.insurer.toLowerCase()) return false
-      if (filters.startDate) {
-        if (new Date(p.expiration_date) < new Date(filters.startDate)) return false
-      }
-      if (filters.endDate) {
-        if (new Date(p.expiration_date) > new Date(filters.endDate)) return false
-      }
+      if (filters.startDate && new Date(p.expiration_date) < new Date(filters.startDate)) return false
+      if (filters.endDate   && new Date(p.expiration_date) > new Date(filters.endDate))   return false
       return true
     })
   }, [policies, filters])
 
-  const handleRenewSuccess = (updatedPolicy: Policy) => {
-    setPolicies((prev) =>
-      sortByPriority(prev.map((p) => p.id === updatedPolicy.id ? updatedPolicy : p))
-    )
+  const handleRenewSuccess = (updated: Policy) => {
+    setPolicies(prev => sortByPriority(prev.map(p => p.id === updated.id ? updated : p)))
     setRenewPolicy(null)
-    if (selectedPolicy?.id === updatedPolicy.id) setSelectedPolicy(updatedPolicy)
+    if (selectedPolicy?.id === updated.id) setSelectedPolicy(updated)
   }
 
   const handleContactSuccess = () => {
+    // Refresca historial en PolicyDetail si está abierto
+    contactSavedCbRef.current?.()
+    contactSavedCbRef.current = null
     setContactPolicy(null)
-    if (selectedPolicy?.id === contactPolicy?.id) {
-      setSelectedPolicy({ ...selectedPolicy! })
-    }
   }
 
   return (
@@ -97,8 +79,6 @@ export default function Dashboard() {
       {/* HEADER */}
       <header className="bg-white/90 backdrop-blur border-b border-stone-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-
-          {/* izquierda — logo */}
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-black shadow-lg shadow-blue-200">
               M
@@ -109,49 +89,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* derecha — acciones */}
           <div className="flex items-center gap-2">
-
-            {/* Clientes CRUD */}
             <button
               onClick={() => setShowClients(true)}
-              className="
-                flex items-center gap-2
-                px-3.5 py-2 rounded-xl
-                bg-indigo-50 border border-indigo-200
-                text-indigo-700 hover:bg-indigo-100
-                text-xs font-semibold
-                transition-all shadow-sm
-              "
-              title="Gestionar clientes"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold transition-all shadow-sm"
             >
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Clientes</span>
             </button>
 
-            {/* Pólizas CRUD */}
             <button
               onClick={() => setShowPolicies(true)}
-              className="
-                flex items-center gap-2
-                px-3.5 py-2 rounded-xl
-                bg-emerald-50 border border-emerald-200
-                text-emerald-700 hover:bg-emerald-100
-                text-xs font-semibold
-                transition-all shadow-sm
-              "
-              title="Gestionar pólizas"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-all shadow-sm"
             >
               <FileText className="w-4 h-4" />
               <span className="hidden sm:inline">Pólizas</span>
             </button>
 
-            {/* Actualizar */}
             <button
               onClick={fetchPolicies}
               disabled={loading}
               className="p-2.5 rounded-xl bg-white border border-stone-200 hover:bg-stone-100 text-stone-400 hover:text-stone-700 disabled:opacity-40 transition-all shadow-sm"
-              title="Actualizar"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -161,33 +119,28 @@ export default function Dashboard() {
 
       {/* MAIN */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-2xl">
-            {error}
-          </div>
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-2xl">{error}</div>
         )}
 
-        {/* STATS */}
         {!loading && (
           <StatsBar
             policies={policies}
             activeMetric={activeMetric}
-            onSelectMetric={(metric) => {
+            onSelectMetric={metric => {
               if (activeMetric === metric) {
                 setActiveMetric('')
                 setFilters({ ...filters, priority: '', status: '' })
                 return
               }
               setActiveMetric(metric)
-              if (metric === 'critical') setFilters({ ...filters, priority: 'critical', status: '' })
-              if (metric === 'high')     setFilters({ ...filters, priority: 'high',     status: '' })
-              if (metric === 'renewable') setFilters({ ...filters, priority: '',        status: 'renewable' })
+              if (metric === 'critical')   setFilters({ ...filters, priority: 'critical', status: '' })
+              if (metric === 'high')       setFilters({ ...filters, priority: 'high',     status: '' })
+              if (metric === 'renewable')  setFilters({ ...filters, priority: '',         status: 'renewable' })
             }}
           />
         )}
 
-        {/* FILTROS */}
         <FilterBar
           filters={filters}
           onChange={setFilters}
@@ -196,7 +149,6 @@ export default function Dashboard() {
           filteredCount={filteredPolicies.length}
         />
 
-        {/* TABLA */}
         {loading ? (
           <div className="bg-white border border-stone-200 rounded-2xl p-16 text-center shadow-sm">
             <RefreshCw className="w-5 h-5 animate-spin text-stone-300 mx-auto mb-2" />
@@ -207,23 +159,24 @@ export default function Dashboard() {
             policies={filteredPolicies}
             onSelectPolicy={setSelectedPolicy}
             onRenew={setRenewPolicy}
-            onContact={setContactPolicy}
+            onContact={p => { setContactPolicy(p); contactSavedCbRef.current = null }}
           />
         )}
       </main>
 
-      {/* DETAIL */}
       {selectedPolicy && (
         <PolicyDetail
           policy={selectedPolicy}
           onClose={() => setSelectedPolicy(null)}
           onRenew={setRenewPolicy}
-          onContact={setContactPolicy}
+          onContact={(p, onSaved) => {
+            setContactPolicy(p)
+            contactSavedCbRef.current = onSaved ?? null
+          }}
           onRefresh={fetchPolicies}
         />
       )}
 
-      {/* RENEW */}
       {renewPolicy && (
         <RenewModal
           policy={renewPolicy}
@@ -232,7 +185,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* CONTACT */}
       {contactPolicy && (
         <ContactModal
           policy={contactPolicy}
@@ -241,17 +193,10 @@ export default function Dashboard() {
         />
       )}
 
-      {/* CLIENTS CRUD */}
-      {showClients && (
-        <ClientsModal onClose={() => setShowClients(false)} />
-      )}
+      {showClients && <ClientsModal onClose={() => setShowClients(false)} />}
 
-      {/* POLICIES CRUD */}
       {showPolicies && (
-        <PoliciesModal
-          onClose={() => setShowPolicies(false)}
-          onRefresh={fetchPolicies}
-        />
+        <PoliciesModal onClose={() => setShowPolicies(false)} onRefresh={fetchPolicies} />
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Phone, RefreshCw, Clock, FileText } from 'lucide-react'
 import type { Policy, Activity } from '../utils/priority'
 import { ACTIVITY_LABELS } from '../utils/priority'
@@ -9,7 +9,7 @@ interface Props {
   policy:    Policy
   onClose:   () => void
   onRenew:   (p: Policy) => void
-  onContact: (p: Policy) => void
+  onContact: (p: Policy, onSaved: () => void) => void  // ← recibe callback
   onRefresh: () => void
 }
 
@@ -34,11 +34,11 @@ const ACTIVITY_ICON: Record<string, string> = {
   other:    '•',
 }
 
-export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Props) {
+export default function PolicyDetail({ policy, onClose, onRenew, onContact, onRefresh }: Props) {
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading]       = useState(true)
 
-  useEffect(() => {
+  const loadActivities = useCallback(() => {
     setLoading(true)
     getActivities(policy.id)
       .then(r => setActivities(r.data))
@@ -46,16 +46,19 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
       .finally(() => setLoading(false))
   }, [policy.id])
 
+  useEffect(() => { loadActivities() }, [loadActivities])
+
+  // Al registrar actividad, recargamos el historial en tiempo real
+  const handleContact = () => {
+    onContact(policy, loadActivities)
+  }
+
   return (
     <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/20 z-40 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col">
+
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-stone-100">
           <div>
@@ -72,18 +75,16 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
 
         {/* Contenido scrolleable */}
         <div className="flex-1 overflow-y-auto">
+
           {/* Info general */}
           <div className="px-5 py-4 space-y-3 border-b border-stone-100">
             <div className="flex gap-2 flex-wrap">
               <StatusBadge status={policy.status} />
               <PriorityBadge level={policy.priority_level} />
               {policy.is_renewable && (
-                <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded-md">
-                  Renovable
-                </span>
+                <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded-md">Renovable</span>
               )}
             </div>
-
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
                 <p className="text-xs text-stone-400">Vencimiento</p>
@@ -92,9 +93,7 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
               {policy.premium_amount != null && (
                 <div>
                   <p className="text-xs text-stone-400">Prima</p>
-                  <p className="text-stone-700 font-medium">
-                    ${policy.premium_amount.toLocaleString('es-CO')}
-                  </p>
+                  <p className="text-stone-700 font-medium">${policy.premium_amount.toLocaleString('es-CO')}</p>
                 </div>
               )}
               {policy.client_phone && (
@@ -121,7 +120,7 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
               </button>
             )}
             <button
-              onClick={() => onContact(policy)}
+              onClick={handleContact}
               className="flex items-center gap-1.5 text-sm bg-stone-100 text-stone-700 hover:bg-stone-200 px-3 py-2 rounded-lg transition-colors flex-1 justify-center"
             >
               <Phone className="w-4 h-4" /> Registrar Actividad
@@ -147,12 +146,8 @@ export default function PolicyDetail({ policy, onClose, onRenew, onContact }: Pr
                   <div key={a.id} className="flex gap-3">
                     <span className="text-base mt-0.5 shrink-0">{ACTIVITY_ICON[a.activity_type] ?? '•'}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-stone-700">
-                        {ACTIVITY_LABELS[a.activity_type]}
-                      </p>
-                      {a.note && (
-                        <p className="text-xs text-stone-500 mt-0.5 break-words">{a.note}</p>
-                      )}
+                      <p className="text-xs font-medium text-stone-700">{ACTIVITY_LABELS[a.activity_type]}</p>
+                      {a.note && <p className="text-xs text-stone-500 mt-0.5 break-words">{a.note}</p>}
                       <p className="text-[10px] text-stone-300 mt-1">{formatDateTime(a.created_at)}</p>
                     </div>
                   </div>
